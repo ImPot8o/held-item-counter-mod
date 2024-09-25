@@ -61,8 +61,8 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           script: |
-            const releaseType = ${{ steps.extract_version.outputs.RELEASE_TYPE }}; // Correctly assign the value here
-            const releaseVersion = ${{ steps.extract_version.outputs.RELEASE_VERSION || 'v1.0.1' }}; 
+            const releaseType = "${{ steps.extract_version.outputs.RELEASE_TYPE }}"; // Quotes added around expression
+            const releaseVersion = "${{ steps.extract_version.outputs.RELEASE_VERSION || 'v1.0.1' }}";  // Quotes added
             const releaseName = `${releaseType} Update ${releaseVersion}`;
             const releaseBody = `${{ github.event.head_commit.message }}`; 
 
