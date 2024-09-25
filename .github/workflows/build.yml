@@ -62,7 +62,7 @@ jobs:
         uses: actions/create-release@v1
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
-          tag_name: ${{ steps.extract_version.outputs.RELEASE_VERSION }}
+          tag_name: ${{ steps.extract_version.outputs.RELEASE_VERSION }}  <-- THIS LINE WAS MISSING!
           release_name: ${{ steps.extract_version.outputs.RELEASE_TYPE }} Update ${{ steps.extract_version.outputs.RELEASE_VERSION }}
           body: ${{ github.event.head_commit.message }}
           draft: false
