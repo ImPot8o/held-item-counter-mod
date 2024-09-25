@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions: 
       contents: write
-
+      
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -46,36 +46,66 @@ jobs:
       - name: Build
         run: ./gradlew build --no-daemon
 
-      # Automatic Release Creation
+      # Automatic Versioning and Release
       - name: Extract version and release type
         id: extract_version
         run: |
           RELEASE_TYPE=$(echo "$GITHUB_EVENT_INPUT_DESCRIPTION" | cut -d " " -f1)
           RELEASE_VERSION=$(echo "$GITHUB_EVENT_INPUT_DESCRIPTION" | cut -d " " -f2)
-          echo "Release Type: $RELEASE_TYPE" 
-          echo "Release Version: $RELEASE_VERSION" 
+          echo "Release Type: $RELEASE_TYPE" # Debugging output
+          echo "Release Version: $RELEASE_VERSION" # Debugging output
           echo "::set-output name=RELEASE_TYPE::$RELEASE_TYPE"
           echo "::set-output name=RELEASE_VERSION::$RELEASE_VERSION"
 
-      - name: Create Release
+      - name: Create or Update Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: actions/github-script@v6
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
-          tag_name: ${{ steps.extract_version.outputs.RELEASE_VERSION }}
-          release_name: ${{ steps.extract_version.outputs.RELEASE_TYPE }} Update ${{ steps.extract_version.outputs.RELEASE_VERSION }}
-          body: ${{ github.event.head_commit.message }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const releaseType = "${{ steps.extract_version.outputs.RELEASE_TYPE }}"; 
+            const releaseVersion = "${{ steps.extract_version.outputs.RELEASE_VERSION || 'v1.0.1' }}";
+            const releaseName = `${releaseType} Update ${releaseVersion}`;
+            const releaseBody = `${{ github.event.head_commit.message }}`; 
 
-      - name: Upload JAR to Release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: .versions\1.8.9-forge\build\libs\HeldItemCounterMod-1.8.9-forge_.jar 
-          asset_name: HeldItemCounterMod-1.8.9-forge-${{ steps.extract_version.outputs.RELEASE_VERSION }}.jar
-          asset_content_type: application/java-archive
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            // Try with and without "v" prefix
+            const existingRelease = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: releaseVersion, 
+            }).catch(async (error) => { 
+              if (error.status === 404 && !releaseVersion.startsWith('v')) {
+                // Retry with "v" prefix if not found
+                return await github.rest.repos.getReleaseByTag({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  tag: `v${releaseVersion}`,
+                });
+              }
+              throw error; // Re-throw if not a 404 or already has "v"
+            });
+
+            if (existingRelease.status === 200) {
+              console.log(`Updating existing release for tag ${releaseVersion}`);
+              await github.rest.repos.updateRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: existingRelease.data.id,
+                tag_name: releaseVersion,
+                name: releaseName,
+                body: releaseBody,
+                draft: false,
+                prerelease: false,
+              });
+            } else {
+              console.log(`Creating new release for tag ${releaseVersion}`);
+              await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: releaseVersion,
+                name: releaseName,
+                body: releaseBody,
+                draft: false,
+                prerelease: false,
+              });
+            }
