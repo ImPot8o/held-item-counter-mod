@@ -48,21 +48,53 @@ jobs:
       - name: Extract version and release type
         id: extract_version
         run: |
-          # Assuming the commit description is in the format: "type version", e.g., "minor 1.1.0"
           RELEASE_TYPE=$(echo "$GITHUB_EVENT_INPUT_DESCRIPTION" | cut -d " " -f1)
           RELEASE_VERSION=$(echo "$GITHUB_EVENT_INPUT_DESCRIPTION" | cut -d " " -f2)
+          echo "Release Type: $RELEASE_TYPE" # Debugging output
+          echo "Release Version: $RELEASE_VERSION" # Debugging output
           echo "::set-output name=RELEASE_TYPE::$RELEASE_TYPE"
           echo "::set-output name=RELEASE_VERSION::$RELEASE_VERSION"
 
-      - name: Create Release
+      - name: Create or Update Release
         id: create_release
-        uses: actions/create-release@v1
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' # Only on push to main branch
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/github-script@v6
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
-          tag_name: ${{ steps.extract_version.outputs.RELEASE_VERSION }}
-          release_name: ${{ steps.extract_version.outputs.RELEASE_TYPE }} Update ${{ steps.extract_version.outputs.RELEASE_VERSION }}
-          body: ${{ github.event.head_commit.message }}
-          draft: false
-          prerelease: false
+          script: |
+            const releaseType = ${{ steps.extract_version.outputs.RELEASE_TYPE }};
+            const releaseVersion = ${{ steps.extract_version.outputs.RELEASE_VERSION || 'v1.0.1' }}; 
+            const releaseName = `${releaseType} Update ${releaseVersion}`;
+            const releaseBody = `${{ github.event.head_commit.message }}`; 
+
+            const existingRelease = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: releaseVersion, // Check for existing release by tag
+            });
+
+            if (existingRelease.status === 200) {
+              // Update existing release
+              console.log(`Updating existing release for tag ${releaseVersion}`);
+              await github.rest.repos.updateRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: existingRelease.data.id,
+                tag_name: releaseVersion,
+                name: releaseName,
+                body: releaseBody,
+                draft: false,
+                prerelease: false,
+              });
+            } else {
+              // Create a new release
+              console.log(`Creating new release for tag ${releaseVersion}`);
+              await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: releaseVersion,
+                name: releaseName,
+                body: releaseBody,
+                draft: false,
+                prerelease: false,
+              });
+            }
