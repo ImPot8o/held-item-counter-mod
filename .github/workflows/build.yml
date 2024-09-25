@@ -110,7 +110,7 @@ jobs:
             const release = await github.rest.repos.getReleaseByTag({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag: "${{ steps.extract_version.outputs.RELEASE_VERSION }}"
+              tag: "${{ steps.extract_version.outputs.RELEASE_VERSION }}" // Use the extracted tag
             });
             core.setOutput("upload_url", release.data.upload_url); 
 
