@@ -61,19 +61,18 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           script: |
-            const releaseType = "${{ steps.extract_version.outputs.RELEASE_TYPE }}"; // Quotes added around expression
-            const releaseVersion = "${{ steps.extract_version.outputs.RELEASE_VERSION || 'v1.0.1' }}";  // Quotes added
+            const releaseType = "${{ steps.extract_version.outputs.RELEASE_TYPE }}"; 
+            const releaseVersion = "${{ steps.extract_version.outputs.RELEASE_VERSION || 'v1.0.1' }}";
             const releaseName = `${releaseType} Update ${releaseVersion}`;
             const releaseBody = `${{ github.event.head_commit.message }}`; 
 
             const existingRelease = await github.rest.repos.getReleaseByTag({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag: releaseVersion, // Check for existing release by tag
+              tag: releaseVersion,
             });
 
             if (existingRelease.status === 200) {
-              // Update existing release
               console.log(`Updating existing release for tag ${releaseVersion}`);
               await github.rest.repos.updateRelease({
                 owner: context.repo.owner,
@@ -86,7 +85,6 @@ jobs:
                 prerelease: false,
               });
             } else {
-              // Create a new release
               console.log(`Creating new release for tag ${releaseVersion}`);
               await github.rest.repos.createRelease({
                 owner: context.repo.owner,
