@@ -44,7 +44,7 @@ jobs:
       - name: Build
         run: ./gradlew build --no-daemon
 
-      # Automatic Versioning and Release
+      # Automatic Release Creation
       - name: Extract version and release type
         id: extract_version
         run: |
@@ -55,7 +55,7 @@ jobs:
           echo "::set-output name=RELEASE_TYPE::$RELEASE_TYPE"
           echo "::set-output name=RELEASE_VERSION::$RELEASE_VERSION"
 
-      - name: Create or Update Release
+      - name: Create Release
         id: create_release
         uses: actions/github-script@v6
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -66,32 +66,8 @@ jobs:
             const releaseName = `${releaseType} Update ${releaseVersion}`;
             const releaseBody = `${{ github.event.head_commit.message }}`; 
 
-            let existingRelease = null; 
-            
             try {
-              existingRelease = await github.rest.repos.getReleaseByTag({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag: releaseVersion.startsWith('v') ? releaseVersion : `v${releaseVersion}`,
-              });
-            } catch (error) {
-              console.error("Error fetching release:", error); 
-            }
-
-            if (existingRelease && existingRelease.status === 200) {
-              console.log(`Updating existing release for tag ${releaseVersion}`);
-              await github.rest.repos.updateRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                release_id: existingRelease.data.id,
-                tag_name: releaseVersion,
-                name: releaseName,
-                body: releaseBody,
-                draft: false,
-                prerelease: false,
-              });
-            } else {
-              console.log(`Creating new release for tag ${releaseVersion}`);
+              console.log(`Creating release for tag ${releaseVersion}`);
               await github.rest.repos.createRelease({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -101,4 +77,6 @@ jobs:
                 draft: false,
                 prerelease: false,
               });
+            } catch (error) {
+              console.error("Error creating release:", error); 
             }
