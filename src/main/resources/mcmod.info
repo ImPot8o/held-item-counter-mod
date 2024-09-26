@@ -2,13 +2,13 @@
   {
     "modid": "${id}",
     "name": "${name}",
-    "description": "",
+    "description": "Displays how many of the item you're holding you have. (oneconfig)",
     "version": "${version}",
     "mcversion": "${mcVersionStr}",
     "url": "",
     "updateUrl": "",
     "authorList": [
-      "Your Name"
+      "Davenix"
     ],
     "credits": "",
     "logoFile": "",

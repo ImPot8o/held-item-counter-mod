@@ -1,4 +1,4 @@
-package org.polyfrost.example.mixin;
+package org.polyfrost.helditemcounter.mixin;
 
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;

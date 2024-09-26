@@ -1,19 +1,19 @@
-package org.polyfrost.example.hud;
+package org.polyfrost.helditemcounter.hud;
 
 import cc.polyfrost.oneconfig.hud.SingleTextHud;
 import net.minecraft.item.ItemStack;
 import net.minecraft.client.Minecraft;
 
-import org.polyfrost.example.config.TestConfig;
+import org.polyfrost.helditemcounter.config.HeldItemCounterConfig;
 
 /**
  * An example OneConfig HUD that is started in the config and displays text.
  *
  * @see HeldItemCounterConfig#hud
  */
-public class TestHud extends SingleTextHud {
+public class HeldItemCounterHud extends SingleTextHud {
     final Minecraft mc = Minecraft.getMinecraft();
-    public TestHud() {
+    public HeldItemCounterHud() {
         super("Held Item Count", true);
     }
 
@@ -28,7 +28,7 @@ public class TestHud extends SingleTextHud {
             itemCount = getItemCount(new ItemStack(net.minecraft.init.Items.arrow));
 
         } else {
-            if (!TestConfig.onlyArrowCount) {
+            if (!HeldItemCounterConfig.onlyArrowCount) {
                 // If not holding a bow and arrow count display is not enabled, count the held item
                 itemCount = getItemCount(heldItem);
             }
